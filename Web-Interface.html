@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor Kontrol Arayüzü</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 2px solid #888;
+            background-color: white;
+            color: black;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .active {
+            background-color: #4CAF50;
+            color: white;
+            border: 2px solid #4CAF50;
+        }
+
+        .power-off {
+            background-color: red;
+            border: 2px solid red;
+        }
+
+        .power-on {
+            background-color: green;
+            border: 2px solid green;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 640px;
+            margin-top: 20px;
+            align-items: center;
+        }
+
+        .half-width {
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .microstep-container {
+            margin-top: 50px;
+        }
+
+        .microstep-label {
+            margin-bottom: 10px;
+        }
+
+        #powerButton {
+            width: 200px;
+            height: 60px;
+            margin-top: 20px;
+        }
+
+        #turnButton {
+            width: 150px;
+            height: 50px;
+            margin-top: 20px;
+        }
+
+        #speedInput {
+            width: 150px;
+            height: 50px;
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        #microstepSlider {
+            width: 100%;
+            max-width: 300px;
+            margin-top: 5px;
+        }
+
+        #microstepValue {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        #sendButton {
+            width: 200px;
+            height: 60px;
+            margin-top: 40px;
+        }
+
+        #output {
+            margin-top: 20px;
+            font-weight: bold;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Step Motor Control Interface</h2>
+
+<div class="button-container">
+    <button id="powerButton" class="power-off">OFF</button>
+
+    <div class="button-row">
+        <button id="turnButton" class="half-width">Right</button>
+        <input type="number" id="speedInput" placeholder="Speed (0-1000)" min="0" max="1000" value="" class="half-width"/>
+    </div>
+
+    <div class="microstep-container">
+        <div class="microstep-label">
+            <label for="microstepSlider">Microstep:</label>
+        </div>
+        <input type="range" id="microstepSlider" min="0" max="4" value="0" step="1">
+        <div id="microstepValue">1/1</div>
+    </div>
+
+    <button id="sendButton">Gönder</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+    let direction = 1;
+    let powerStatus = 0;
+
+    const microstepLabelValues = ["1/1", "1/2", "1/4", "1/8", "1/16"];
+    const powerButton       = document.getElementById("powerButton");
+    const turnButton        = document.getElementById("turnButton");
+    const sendButton        = document.getElementById("sendButton");
+    const speedInput        = document.getElementById("speedInput");
+    const microstepSlider   = document.getElementById("microstepSlider");
+    const microstepValue    = document.getElementById("microstepValue");
+    const output            = document.getElementById("output");
+
+    // Initialize labels
+    powerButton.textContent   = "OFF";
+    turnButton.textContent    = "Right";
+    microstepValue.textContent = microstepLabelValues[microstepSlider.value];
+
+    // Slider UI
+    microstepSlider.addEventListener("input", () => {
+        microstepValue.textContent = microstepLabelValues[microstepSlider.value];
+    });
+
+    // Toggle direction
+    turnButton.addEventListener("click", () => {
+        direction = 1 - direction;
+        turnButton.textContent = direction === 1 ? "Right" : "Left";
+        //turnButton.classList.toggle("active");
+    });
+
+    // Toggle power
+    powerButton.addEventListener("click", () => {
+        powerStatus = 1 - powerStatus;
+        const on = powerStatus === 1;
+        powerButton.textContent = on ? "ON" : "OFF";
+        powerButton.classList.toggle("power-on", on);
+        powerButton.classList.toggle("power-off", !on);
+    });
+
+    // Send command
+    sendButton.addEventListener("click", () => {
+      const speedValue     = parseInt(speedInput.value, 10);
+      const microstepIndex = parseInt(microstepSlider.value, 10);
+      let text;
+  
+      if (isNaN(speedValue) || speedValue < 0 || speedValue > 1000) {
+          text = "-1 -1 -1 -1";
+      } else {
+          text = `${powerStatus} ${direction} ${speedValue} ${microstepIndex}`;
+          speedInput.value = speedValue;  // normalize
+      }
+  
+      // create a new line element
+      const line = document.createElement("div");
+      line.textContent = text;
+      output.appendChild(line);
+  
+      // if more than 5 lines, remove the oldest
+      while (output.childElementCount > 5) {
+          output.removeChild(output.firstElementChild);
+      }
+  
+      // auto‐remove this line after 3 seconds
+      setTimeout(() => {
+          if (output.contains(line)) {
+              output.removeChild(line);
+          }
+      }, 10000);
+    });
+
+</script>
+
+</body>
+</html>
